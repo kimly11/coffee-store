@@ -1,5 +1,31 @@
 <?php
-   require "includes/header.php"; 
+require "includes/header.php"; 
+require "configs/config.php";
+
+try {
+    // Prepare and execute the query to fetch products
+    $stmt = $conn->prepare("SELECT * FROM products");
+    $stmt->execute();
+
+    // Get the result set
+    $result = $stmt->get_result();
+
+    // Fetch all products as an array of objects
+    $allProducts = [];
+    while ($row = $result->fetch_object()) {
+        $allProducts[] = $row;
+    }
+
+    // Check if products were found
+    if (!empty($allProducts)) {
+        // You can now use $allProducts to display products
+    } else {
+        echo "<p>No products found.</p>";
+    }
+} catch (Exception $e) {
+    // Handle any errors that occur during the query
+    echo "<p>Error: " . $e->getMessage() . "</p>";
+}
 ?>
 
     <section class="home-slider owl-carousel">
@@ -184,7 +210,7 @@
 	          	<span class="subheading">Discover</span>
 	            <h2 class="mb-4">Our Menu</h2>
 	            <p class="mb-4">Far far away, behind the word mountains, far from the countries Vokalia and Consonantia, there live the blind texts. Separated they live in Bookmarksgrove right at the coast of the Semantics, a large language ocean.</p>
-	            <p><a href="#" class="btn btn-primary btn-outline-primary px-4 py-3">View Full Menu</a></p>
+	            <p><a href="menu.php" class="btn btn-primary btn-outline-primary px-4 py-3">View Full Menu</a></p>
 	          </div>
     			</div>
     			<div class="col-md-6">
@@ -268,55 +294,24 @@
     		<div class="row justify-content-center mb-5 pb-3">
           <div class="col-md-7 heading-section ftco-animate text-center">
           	<span class="subheading">Discover</span>
-            <h2 class="mb-4">Best Online Sellers</h2>
+            <h2 class="mb-4">Best Coffee Sellers</h2>
             <p>Far far away, behind the word mountains, far from the countries Vokalia and Consonantia, there live the blind texts.</p>
           </div>
         </div>
         <div class="row">
-        	<div class="col-md-3">
-        		<div class="menu-entry">
-    					<a href="#" class="img" style="background-image: url(Imag/menu1.jpg);"></a>
-    					<div class="text text-center pt-4">
-    						<h3><a href="#">Online Capuccino</a></h3>
-    						<p>A small river named Duden flows by their place and supplies</p>
-    						<p class="price"><span>$5.90</span></p>
-    						<p><a href="#" class="btn btn-primary btn-outline-primary">Add to Cart</a></p>
-    					</div>
-    				</div>
-        	</div>
-        	<div class="col-md-3">
-        		<div class="menu-entry">
-    					<a href="#" class="img" style="background-image: url(Imag/menu2.jpg);"></a>
-    					<div class="text text-center pt-4">
-    						<h3><a href="#">Coffee Capuccino</a></h3>
-    						<p>A small river named Duden flows by their place and supplies</p>
-    						<p class="price"><span>$5.90</span></p>
-    						<p><a href="#" class="btn btn-primary btn-outline-primary">Add to Cart</a></p>
-    					</div>
-    				</div>
-        	</div>
-        	<div class="col-md-3">
-        		<div class="menu-entry">
-    					<a href="#" class="img" style="background-image: url(Imag/menu2.jpg);"></a>
-    					<div class="text text-center pt-4">
-    						<h3><a href="#">Online Capuccino</a></h3>
-    						<p>A small river named Duden flows by their place and supplies</p>
-    						<p class="price"><span>$5.90</span></p>
-    						<p><a href="#" class="btn btn-primary btn-outline-primary">Add to Cart</a></p>
-    					</div>
-    				</div>
-        	</div>
-        	<div class="col-md-3">
-        		<div class="menu-entry">
-    					<a href="#" class="img" style="background-image: url(Imag/menu4.jpg);"></a>
-    					<div class="text text-center pt-4">
-    						<h3><a href="#">Online Capuccino</a></h3>
-    						<p>A small river named Duden flows by their place and supplies</p>
-    						<p class="price"><span>$5.90</span></p>
-    						<p><a href="#" class="btn btn-primary btn-outline-primary">Add to Cart</a></p>
-    					</div>
-    				</div>
-        	</div>
+			<?php foreach($allProducts as $product) : ?>
+				<div class="col-md-3">
+					<div class="menu-entry">
+							<a target="_blank" href="products/product-single.php?id=<?php echo $product->id; ?>" class="img" style="background-image: url(<?php echo APPURL; ?>/images/<?php echo $product->image; ?>);"></a>
+							<div class="text text-center pt-4">
+								<h3><a href="#"><?php echo $product->name; ?></a></h3>
+								<p><?php echo $product->description; ?></p>
+								<p class="price"><span><?php echo $product->price; ?></span></p>
+								<p><a target="_blank" href="products/product-single.php?id=<?php echo $product->id; ?>" class="btn btn-primary btn-outline-primary">Show</a></p>
+							</div>
+						</div>
+				</div>
+			<?php endforeach; ?>
         </div>
     	</div>
     </section>
@@ -442,8 +437,3 @@
 <?php
 	require "includes/footer.php";
 ?>
-
-		
-	
-
-    
