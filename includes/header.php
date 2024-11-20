@@ -1,6 +1,6 @@
 <?php
     session_start();
-    define ("APPURL", "http://localhost/coffee-blend");
+    define ("APPURL", "http://localhost/coffee-store");
 ?>
 
 <!DOCTYPE html>

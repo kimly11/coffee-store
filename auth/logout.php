@@ -3,5 +3,5 @@
     session_start();
     session_unset();
     session_destroy();
-    header("location: http://localhost/coffee-blend/");
+    header("location: http://localhost/coffee-store/");
 ?>
