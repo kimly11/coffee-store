@@ -1,40 +1,24 @@
 <?php 
-  require "../includes/header.php"; 
-  require "../configs/config.php";
-?>
-<?php
+require "../includes/header.php"; 
+require "../configs/config.php"; 
+//session_start(); // Start the session at the beginning
+
 if (isset($_GET['id'])) {
     $id = $_GET['id'];
-	// data for singleProduct
-    // Prepare a statement to prevent SQL injection for the main product
+
+    // Prepare a statement to fetch the main product
     $stmt = $conn->prepare("SELECT * FROM products WHERE id = ?");
-    
-    // Bind the parameter
     $stmt->bind_param("i", $id); // Assuming id is an integer
-
-    // Execute the statement
     $stmt->execute();
-    
-    // Get the result
     $result = $stmt->get_result();
-
-    // Fetch the product as an object
     $singleProduct = $result->fetch_object();
 
     // Check if the product was found
     if ($singleProduct) {
-        // You can now use $singleProduct to display details
-		//data for relateProducts
-        // Prepare a statement to fetch related products
+        // Fetch related products
         $relatedStmt = $conn->prepare("SELECT * FROM products WHERE type = ? AND id != ?");
-        
-        // Bind the parameters
         $relatedStmt->bind_param("si", $singleProduct->type, $singleProduct->id); // Assuming type is a string and id is an integer
-
-        // Execute the statement
         $relatedStmt->execute();
-        
-        // Get the result for related products
         $relatedResult = $relatedStmt->get_result();
 
         // Fetch all related products as an array of objects
@@ -43,35 +27,46 @@ if (isset($_GET['id'])) {
             $allRelatedProducts[] = $relatedProduct;
         }
 
-        // Now you can display related products or perform other actions with $allRelatedProducts
+        // Add to cart logic
+        if (isset($_POST['submit'])) {
+            // Use the product details directly
+            $name = $singleProduct->name; // Get product name from fetched product
+            $image = $singleProduct->image; // Assuming this is the image URL/path
+            $price = $singleProduct->price; // Get product price
+            $description = $singleProduct->description; // Get product description
+            $quantity = $_POST['quantity'];    
+            $user_id = $_SESSION['user_id'];
+
+            // Prepare the statement to insert into cart
+            $insert_cart = $conn->prepare("INSERT INTO cart (name, image, price, pro_id, description, quantity, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        
+            // Bind the parameters
+            $insert_cart->bind_param("ssdsiis", $name, $image, $price, $id, $description, $quantity, $user_id);
+            // Execute the statement
+            if ($insert_cart->execute()) {
+                echo "<p>Item added to cart successfully!</p>";
+            } else {
+                echo "<p>Error adding item to cart: " . $conn->error . "</p>";
+            }
+        }
+
+        // Validate if the product is already in the cart
+        if (isset($_SESSION['user_id'])) {
+            // Prepare the statement for cart validation
+            $validateCart = $conn->prepare("SELECT * FROM cart WHERE pro_id = ? AND user_id = ?");
+            $validateCart->bind_param("ii", $id, $_SESSION['user_id']); // Assuming both are integers
+            $validateCart->execute();
+            $validateResult = $validateCart->get_result();
+
+            $rowCount = $validateResult->num_rows; // Correct way to get the number of rows
+            if ($rowCount > 0) {
+                echo "<p>This product is already in your cart.</p>";
+            }
+        }
+
     } else {
         echo "<p>Product not found.</p>";
     }
-
-
-	// Add to cart
-if (isset($_POST['submit'])) {
-    $name = $_POST['name'];
-    $image = $_POST['image'];
-    $price = $_POST['price'];
-    $description = $_POST['description'];
-    $quantity = $_POST['quantity'];    
-    $user_id = $_SESSION['user_id'];
-
-    // Prepare the statement
-    $insert_cart = $conn->prepare("INSERT INTO cart (name, image, price, description, quantity, user_id) VALUES (?, ?, ?, ?, ?, ?)");
-
-    // Bind the parameters
-    $insert_cart->bind_param("ssdsii", $name, $image, $price, $description, $quantity, $user_id); 
-    // Assuming price is a double (d), and quantity and user_id are integers (i)
-
-    // Execute the statement
-    if ($insert_cart->execute()) {
-        echo "<p>Item added to cart successfully!</p>";
-    } else {
-        echo "<p>Error adding item to cart: " . $conn->error . "</p>";
-    }
-}
 
 } else {
     echo "<p>No product ID specified.</p>";	
@@ -106,8 +101,10 @@ if (isset($_POST['submit'])) {
     				<p>
 					<?php echo $singleProduct->description; ?>
 					</p>
+				<form method="POST" action="product-single.php?id=<?php echo $id; ?>">
+
 						<div class="row mt-4">
-							<div class="col-md-6">
+							<!-- <div class="col-md-6">
 								<div class="form-group d-flex">
 								<div class="select-wrap">
 								<div class="icon"><span class="ion-ios-arrow-down"></span></div>
@@ -118,7 +115,7 @@ if (isset($_POST['submit'])) {
 									<option value="">Extra Large</option>
 								</select>
 	                			</div>
-		            		</div>
+		            		</div> -->
 						</div>
 					<div class="w-100"></div>
 					<div class="input-group col-md-6 d-flex mb-3">
@@ -127,7 +124,6 @@ if (isset($_POST['submit'])) {
 	                   		<i class="icon-minus"></i>
 	                	</button>
 	            	</span>
-				<form method="POST" action="product-single.php?id=<?php echo $id; ?>">
 
 	             	<input type="text" id="quantity" name="quantity" class="form-control input-number" value="1" min="1" max="100">
 	             	<span class="input-group-btn ml-2">
@@ -138,11 +134,16 @@ if (isset($_POST['submit'])) {
 	          		</div>
           		</div>
 			
-				<input name="name" value="<?php echo $singleProduct->name; ?>" type="text">
-				<input name="image" value="<?php echo $singleProduct->image; ?>" type="text">
-				<input name="price" value="<?php echo $singleProduct->price; ?>" type="text">
-				<input name="description" value="<?php echo $singleProduct->description; ?>" type="text">
-          		<p><button name="submit" type="submit" class="btn btn-primary py-3 px-5">Add to Cart</button></p>
+				<input name="name" value="<?php echo $singleProduct->name; ?>" type="hidden">
+				<input name="image" value="<?php echo $singleProduct->image; ?>" type="hidden">
+				<input name="price" value="<?php echo $singleProduct->price; ?>" type="hidden">
+				<input name="pro_id" value="<?php echo $singleProduct->id; ?>" type="hidden">
+				<input name="description" value="<?php echo $singleProduct->description; ?>" type="hidden">
+				<?php if($rowCount > 0) : ?>
+					<button name="submit" type="submit" class="btn btn-primary py-3 px-5" disabled>Added to Cart</button>
+				<?php else : ?>
+          			<button name="submit" type="submit" class="btn btn-primary py-3 px-5">Add to Cart</button>
+				<?php endif; ?>
 			</form>	
     			</div>
     		</div>
